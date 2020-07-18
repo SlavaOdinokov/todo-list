@@ -1,6 +1,7 @@
-var form = document.querySelector('#addForm')
-var itemsList = document.querySelector('#items')
-var filter = document.querySelector('#filter')
+const form = document.querySelector('#addForm')
+const itemsList = document.querySelector('#items')
+const filter = document.querySelector('#filter')
+const newItemInput = document.querySelector('#newItemText')
 
 // 1. Добавить новую задачу
 form.addEventListener('submit', addItem)
@@ -9,24 +10,18 @@ itemsList.addEventListener('click', removeItem)
 // 3. Фильтрация по задачам
 filter.addEventListener('keyup', filterItems)
 
-function addItem(e){
-    // Отменяем отправку формы
-    e.preventDefault()
-    
-    // Находим инпут с текстом для новой задачи
-    var newItemInput = document.querySelector('#newItemText')
-    var newItemText = newItemInput.value
-
+// Создаем новую запись
+function createItem(item){
     // Создаем элемент для новой задачи
-    var newElement = document.createElement('li')
+    let newElement = document.createElement('li')
     newElement.className = 'list-group-item'
 
     // Добавляем текст в новый элемент
-    var newTextNode = document.createTextNode(newItemText)
+    let newTextNode = document.createTextNode(item)
     newElement.appendChild(newTextNode)
 
     // Создаем кнопку
-    var deleteBtn = document.createElement('button')
+    const deleteBtn = document.createElement('button')
     deleteBtn.appendChild(document.createTextNode('Удалить'))
     deleteBtn.className = 'btn btn-light btn-sm float-right'
     deleteBtn.dataset.action = 'delete'
@@ -39,29 +34,41 @@ function addItem(e){
 
     // Очистить поле ввода новой задачи
     newItemInput.value = ''
+
+    // Записываем в LocalStorage
+    updateStorage()
+}
+
+// Добавляем новую запись на страницу
+function addItem(e){
+    // Отменяем отправку формы
+    e.preventDefault()
+    // Проверяем поле ввода на пустое значение
+    if (newItemInput.value != '') {
+        createItem(newItemInput.value)
+    }
 }
 
 function removeItem(e){
-    if (
-        e.target.hasAttribute('data-action') && 
-        e.target.getAttribute('data-action') == 'delete'
-    ) {
+    if (e.target.getAttribute('data-action') == 'delete') {
         if (confirm('Удалить задачу?')) {
             e.target.parentNode.remove()
+            // обновляем хранилище
+            updateStorage()
         }
     }
 }
 
 function filterItems(e){
     // Получаем фразу поиска и переводим ее в нижний регистр
-    var searchedText = e.target.value.toLowerCase()
+    let searchedText = e.target.value.toLowerCase()
 
     // Получаем список всех задач
-    var items = itemsList.querySelectorAll('li')
+    let items = itemsList.querySelectorAll('li')
     // Перебираем циклом все найденные li
     items.forEach(function(item){
         // Получаем текст списка и переводим его в нижний регистр
-        var itemText = item.firstChild.textContent.toLowerCase()
+        let itemText = item.firstChild.textContent.toLowerCase()
         // Проверяем вхождение искомой подстроки в текст задачи
         if (itemText.includes(searchedText)) {
             item.style.display = 'block'
@@ -70,3 +77,23 @@ function filterItems(e){
         }
     })
 }
+
+// Добавление данных в LocalStorage
+function updateStorage() {
+    let tasksList = document.querySelectorAll('.list-group-item')
+    let items = []
+
+    for (let i=0; i < tasksList.length; i++) {
+        items.unshift(tasksList[i].firstChild.textContent)
+    }
+
+    localStorage.setItem('tasksList', JSON.stringify(items))
+}
+
+// Чтение данных из LocalStorage
+function getStorage() {
+    items = JSON.parse(localStorage.getItem('tasksList')) || []
+    items.forEach(item => createItem(item))
+}
+// Запускаем чтение данных из LocalStorage при загрузке страницы
+getStorage()
